@@ -7,46 +7,41 @@ USE flight_analytics;
 
 -- Airports Table
 
-CREATE TABLE IF NOT EXISTS airports (
+CREATE TABLE airports (
     airport_id INT AUTO_INCREMENT PRIMARY KEY,
-    iata_code VARCHAR(10) NOT NULL UNIQUE,
-    icao_code VARCHAR(10),
+    iata_code VARCHAR(10) UNIQUE NOT NULL,
     name VARCHAR(255),
     city VARCHAR(255),
-    country VARCHAR(255),
-    latitude DOUBLE,
-    longitude DOUBLE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    country VARCHAR(255)
+);
+
+
+-- Aircraft Table
+
+CREATE TABLE aircraft (
+    aircraft_id INT AUTO_INCREMENT PRIMARY KEY,
+    registration VARCHAR(20) UNIQUE NOT NULL,
+    model VARCHAR(100) NOT NULL
 );
 
 
 -- Flights Table
 
-CREATE TABLE IF NOT EXISTS flights (
+CREATE TABLE flights (
     flight_id INT AUTO_INCREMENT PRIMARY KEY,
-    departure_airport VARCHAR(10) NOT NULL,
-    arrival_airport VARCHAR(10) NOT NULL,
+    flight_number VARCHAR(20),
+    airline VARCHAR(100),
+
+    departure_airport VARCHAR(10),
+    arrival_airport VARCHAR(10),
+
+    aircraft_id INT,
+
     departure_time DATETIME,
     arrival_time DATETIME,
-    airline VARCHAR(255),
-    flight_number VARCHAR(50),
     status VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_departure_airport
-        FOREIGN KEY (departure_airport)
-        REFERENCES airports(iata_code)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_arrival_airport
-        FOREIGN KEY (arrival_airport)
-        REFERENCES airports(iata_code)
-        ON DELETE CASCADE
+    FOREIGN KEY (departure_airport) REFERENCES airports(iata_code),
+    FOREIGN KEY (arrival_airport) REFERENCES airports(iata_code),
+    FOREIGN KEY (aircraft_id) REFERENCES aircraft(aircraft_id)
 );
-
-
--- Indexes for Faster Analytics
-
-CREATE INDEX idx_flights_status ON flights(status);
-CREATE INDEX idx_flights_airline ON flights(airline);
-CREATE INDEX idx_flights_route ON flights(departure_airport, arrival_airport);
