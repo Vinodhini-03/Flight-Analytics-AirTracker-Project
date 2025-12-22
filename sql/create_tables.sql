@@ -45,3 +45,9 @@ CREATE TABLE flights (
     FOREIGN KEY (arrival_airport) REFERENCES airports(iata_code),
     FOREIGN KEY (aircraft_id) REFERENCES aircraft(aircraft_id)
 );
+INSERT INTO aircraft (registration, model) VALUES
+('VT-ABC', 'Airbus A320'),
+('VT-DEF', 'Boeing 737'),
+('VT-GHI', 'Airbus A321'),
+('VT-JKL', 'Boeing 787'),
+('VT-MNO', 'Airbus A350');
