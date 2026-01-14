@@ -13,8 +13,6 @@ The main objectives of this project are to analyze:
 * Route popularity and busiest connections
 * Delay and cancellation patterns
 
-This project strictly follows the GUVI project requirements and uses only real API data.
-
 ---
 
 🛠 Tech Stack
