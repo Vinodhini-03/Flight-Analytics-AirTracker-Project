@@ -24,14 +24,24 @@ airlines = [
 
 statuses = ["On Time", "Delayed", "Cancelled"]
 
-# fetch aircraft ids
-cursor.execute("SELECT aircraft_id FROM aircraft")
-aircraft_ids = [row[0] for row in cursor.fetchall()]
+# fetch aircraft registrations
+cursor.execute("SELECT registration FROM aircraft")
+aircraft_regs = [row[0] for row in cursor.fetchall()]
+
+if not aircraft_regs:
+    raise Exception("No aircraft found in aircraft table")
 
 insert_query = """
-INSERT INTO flights
-(flight_number, airline, departure_airport, arrival_airport,
- aircraft_id, departure_time, arrival_time, status)
+INSERT INTO flights (
+    flight_number,
+    airline,
+    departure_airport,
+    arrival_airport,
+    aircraft_registration,
+    departure_time,
+    arrival_time,
+    status
+)
 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 """
 
@@ -48,7 +58,7 @@ for _ in range(80):
         random.choice(airlines),
         dep,
         arr,
-        random.choice(aircraft_ids),
+        random.choice(aircraft_regs),
         dep_time,
         arr_time,
         random.choice(statuses)

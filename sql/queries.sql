@@ -2,53 +2,56 @@
    QUERY 1
    Total number of flights for each aircraft model
    ===================================================== */
-SELECT
+SELECT 
     a.model,
-    COUNT(*) AS flight_count
+    COUNT(f.flight_id) AS total_flights
 FROM flights f
-JOIN aircraft a ON f.aircraft_id = a.aircraft_id
-GROUP BY a.model
-ORDER BY flight_count DESC;
+JOIN aircraft a
+    ON f.aircraft_registration = a.registration
+GROUP BY a.model;
 
 
 /* =====================================================
    QUERY 2
    Aircraft assigned to more than 5 flights
    ===================================================== */
-SELECT
+SELECT 
     a.registration,
     a.model,
-    COUNT(f.flight_id) AS total_flights
-FROM aircraft a
-JOIN flights f ON a.aircraft_id = f.aircraft_id
-GROUP BY a.aircraft_id, a.registration, a.model
-HAVING total_flights > 5;
+    COUNT(f.flight_id) AS flight_count
+FROM flights f
+JOIN aircraft a
+    ON f.aircraft_registration = a.registration
+GROUP BY a.registration, a.model
+HAVING COUNT(f.flight_id) > 5;
 
 
 /* =====================================================
    QUERY 3
    Airports with more than 5 outbound flights
    ===================================================== */
-SELECT
-    ap.name AS airport_name,
+SELECT 
+    ap.name,
     COUNT(f.flight_id) AS outbound_flights
-FROM airports ap
-JOIN flights f ON ap.iata_code = f.departure_airport
-GROUP BY ap.iata_code, ap.name
-HAVING outbound_flights > 5;
+FROM flights f
+JOIN airports ap
+    ON f.departure_airport = ap.iata_code
+GROUP BY ap.name
+HAVING COUNT(f.flight_id) > 5;
 
 
 /* =====================================================
    QUERY 4
    Top 3 destination airports by arriving flights
    ===================================================== */
-SELECT
+SELECT 
     ap.name,
     ap.city,
     COUNT(f.flight_id) AS arrival_count
-FROM airports ap
-JOIN flights f ON ap.iata_code = f.arrival_airport
-GROUP BY ap.iata_code, ap.name, ap.city
+FROM flights f
+JOIN airports ap
+    ON f.arrival_airport = ap.iata_code
+GROUP BY ap.name, ap.city
 ORDER BY arrival_count DESC
 LIMIT 3;
 
@@ -57,31 +60,33 @@ LIMIT 3;
    QUERY 5
    Domestic vs International flights
    ===================================================== */
-SELECT
+SELECT 
     f.flight_number,
-    dep.country AS origin_country,
-    arr.country AS destination_country,
+    f.departure_airport,
+    f.arrival_airport,
     CASE
-        WHEN dep.country = arr.country THEN 'Domestic'
+        WHEN ap1.country = ap2.country THEN 'Domestic'
         ELSE 'International'
     END AS flight_type
 FROM flights f
-JOIN airports dep ON f.departure_airport = dep.iata_code
-JOIN airports arr ON f.arrival_airport = arr.iata_code;
+JOIN airports ap1
+    ON f.departure_airport = ap1.iata_code
+JOIN airports ap2
+    ON f.arrival_airport = ap2.iata_code;
 
 
 /* =====================================================
    QUERY 6
    5 most recent arrivals at DEL airport
    ===================================================== */
-SELECT
+SELECT 
     f.flight_number,
-    a.model AS aircraft_model,
-    dep.name AS departure_airport,
+    f.aircraft_registration,
+    ap.name AS departure_airport,
     f.arrival_time
 FROM flights f
-JOIN aircraft a ON f.aircraft_id = a.aircraft_id
-JOIN airports dep ON f.departure_airport = dep.iata_code
+JOIN airports ap
+    ON f.departure_airport = ap.iata_code
 WHERE f.arrival_airport = 'DEL'
 ORDER BY f.arrival_time DESC
 LIMIT 5;
@@ -91,11 +96,12 @@ LIMIT 5;
    QUERY 7
    Airports with no arriving flights
    ===================================================== */
-SELECT
-    ap.iata_code,
-    ap.name
-FROM airports ap
-LEFT JOIN flights f ON ap.iata_code = f.arrival_airport
+SELECT 
+    a.name,
+    a.city
+FROM airports a
+LEFT JOIN flights f
+    ON a.iata_code = f.arrival_airport
 WHERE f.flight_id IS NULL;
 
 
@@ -106,7 +112,7 @@ WHERE f.flight_id IS NULL;
 SELECT
     airline,
     SUM(CASE WHEN status = 'On Time' THEN 1 ELSE 0 END) AS on_time,
-    SUM(CASE WHEN status = 'Delayed' THEN 1 ELSE 0 END) AS delayed,
+    SUM(CASE WHEN status = 'Delayed' THEN 1 ELSE 0 END) AS delay,
     SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END) AS cancelled
 FROM flights
 GROUP BY airline;
@@ -116,16 +122,17 @@ GROUP BY airline;
    QUERY 9
    All cancelled flights with aircraft and airports
    ===================================================== */
-SELECT
+SELECT 
     f.flight_number,
-    a.model AS aircraft_model,
-    dep.name AS departure_airport,
-    arr.name AS arrival_airport,
+    f.aircraft_registration,
+    ap1.name AS departure_airport,
+    ap2.name AS arrival_airport,
     f.departure_time
 FROM flights f
-JOIN aircraft a ON f.aircraft_id = a.aircraft_id
-JOIN airports dep ON f.departure_airport = dep.iata_code
-JOIN airports arr ON f.arrival_airport = arr.iata_code
+JOIN airports ap1
+    ON f.departure_airport = ap1.iata_code
+JOIN airports ap2
+    ON f.arrival_airport = ap2.iata_code
 WHERE f.status = 'Cancelled'
 ORDER BY f.departure_time DESC;
 
@@ -134,28 +141,28 @@ ORDER BY f.departure_time DESC;
    QUERY 10
    Routes with more than 2 aircraft models
    ===================================================== */
-SELECT
-    f.departure_airport,
-    f.arrival_airport,
-    COUNT(DISTINCT a.model) AS aircraft_models
-FROM flights f
-JOIN aircraft a ON f.aircraft_id = a.aircraft_id
-GROUP BY f.departure_airport, f.arrival_airport
-HAVING aircraft_models > 2;
+SELECT 
+    departure_airport,
+    arrival_airport,
+    COUNT(DISTINCT aircraft_registration) AS aircraft_used
+FROM flights
+GROUP BY departure_airport, arrival_airport
+HAVING COUNT(DISTINCT aircraft_registration) > 2;
 
 
 /* =====================================================
    QUERY 11
    Percentage of delayed flights per destination airport
    ===================================================== */
-SELECT
-    arr.name AS destination_airport,
+SELECT 
+    ap.name AS destination_airport,
     ROUND(
-        SUM(CASE WHEN f.status = 'Delayed' THEN 1 ELSE 0 END) * 100.0
-        / COUNT(*),
+        SUM(CASE WHEN f.status = 'Delayed' THEN 1 ELSE 0 END) * 100.0 
+        / COUNT(f.flight_id),
         2
     ) AS delayed_percentage
 FROM flights f
-JOIN airports arr ON f.arrival_airport = arr.iata_code
-GROUP BY arr.iata_code, arr.name
+JOIN airports ap
+    ON f.arrival_airport = ap.iata_code
+GROUP BY ap.name
 ORDER BY delayed_percentage DESC;

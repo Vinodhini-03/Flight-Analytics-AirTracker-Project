@@ -16,22 +16,27 @@ db = mysql.connector.connect(
 cursor = db.cursor()
 
 insert_query = """
-INSERT INTO airports
-(iata_code, icao_code, name, city, country, latitude, longitude)
-VALUES (%s, %s, %s, %s, %s, %s, %s)
+INSERT INTO airports (
+    icao_code,
+    iata_code,
+    name,
+    city,
+    country,
+    continent
+)
+VALUES (%s, %s, %s, %s, %s, %s)
 """
 
 for code in airport_codes:
     data = fetch_airport(code)
 
     values = (
-        data.get("iata"),
         data.get("icao"),
+        data.get("iata"),
         data.get("fullName"),
         data.get("municipalityName"),
         data["country"]["name"],
-        data["location"]["lat"],
-        data["location"]["lon"]
+        data["continent"]["name"]
     )
 
     cursor.execute(insert_query, values)
